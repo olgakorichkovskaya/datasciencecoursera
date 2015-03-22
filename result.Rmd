@@ -1,0 +1,81 @@
+---
+title: "Result"
+output: html_document
+---
+Steps of analisys: 
+1. Data upload from files
+
+```{r}
+testingOrigin <- read.csv("E:/coursera/machineLearning/src/erste/data/pml-testing.csv")
+inputDataOrigin <- read.csv("E:/coursera/machineLearning/src/erste/data/pml-training.csv")
+
+```
+2. Load packages and set seed
+
+```{r, echo=TRUE,comment=FALSE,message=FALSE}
+library(caret);
+library(kernlab);
+set.seed(32343)
+```
+3. Preprocessing: remove unnesessary columns
+```{r}
+drops <- c("cvtd_timestamp", "num_window",
+           "raw_timestamp_part_2","raw_timestamp_part_1","X")
+inputData<-inputDataOrigin[,!(names(inputDataOrigin) %in% drops)]
+testing <- testingOrigin[,!(names(testingOrigin) %in% drops)] 
+```
+Test data set contains only data with newWindow=no, therefore we will use data with new_window=no only
+
+```{r}
+no <- inputData[inputData$new_window %in% c("no"),]
+noTest <- testing[testing$new_window %in% c("no"),]
+drops <- c("new_window")
+
+no<-no[,!(names(no) %in% drops)]
+noTest<-noTest[,!(names(noTest) %in% drops)]
+```
+Remove empty columns
+```{r}
+toRemove<-!apply(no, 2, function(x) all(gsub(" ", "", x)=="", na.rm=TRUE))
+
+no <-no[,toRemove]
+noTest<-noTest[,toRemove]
+```
+
+Divide into test and tain sub sets
+```{r}
+inTrainNoLess<- createDataPartition(y=no$classe,
+                               p=0.7, list=FALSE)
+trainingNoT <- no[inTrainNoLess, ]
+testingNoT <- no[-inTrainNoLess, ]
+```
+
+We will use for prediction random forest algorithm with cross validation with K-fold, K=5, use less trees,than defalt - only 50 
+```{r}
+controlRf <- trainControl(method="cv", 5)
+
+modFit <- train(classe~ .,data=trainingNoT,method="rf",  trControl=controlRf,ntree=50, prox=TRUE)
+```
+Make prediction in training and show confusion matrix
+```{r}
+predictions <- predict(modFit, newdata=testingNoT)
+C1 <- confusionMatrix(predictions, testingNoT$classe)
+C1
+```
+Apply trained algorithm to test data and write result into files
+```{r}
+predictionsTarget <- predict(modFit, newdata=noTest[, -length(names(noTest))])
+answers<-predictionsTarget
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)
+```
+
+
