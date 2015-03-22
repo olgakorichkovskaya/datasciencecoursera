@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Datasciencecoursera by olgakorichkovskaya</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>Datasciencecoursera</h1>
+        <p>repository for data scientist&#39;s toolbox</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/olgakorichkovskaya/datasciencecoursera" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/olgakorichkovskaya/datasciencecoursera/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/olgakorichkovskaya/datasciencecoursera/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <p></p>
+
+<p></p>
+
+<p>
+
+</p>
+
+<p></p>Result
+
+
+
+<p>
+
+</p>
+
+
+
+code{white-space: pre;}
+
+<p></p>
+
+
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+
+
+
+
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+<div>
+
+
+<div id="header">
+<h1>
+<a id="result" class="anchor" href="#result" aria-hidden="true"><span class="octicon octicon-link"></span></a>Result</h1>
+</div>
+
+<p>Steps of analisys: 1. Data upload from files</p>
+
+<pre><code>testingOrigin &lt;- read.csv("E:/coursera/machineLearning/src/erste/data/pml-testing.csv")
+inputDataOrigin &lt;- read.csv("E:/coursera/machineLearning/src/erste/data/pml-training.csv")</code></pre>
+
+<ol start="2">
+<li>Load packages and set seed</li>
+</ol>
+
+<pre><code>library(caret);</code></pre>
+
+<pre><code>FALSE Warning: package 'caret' was built under R version 3.1.3</code></pre>
+
+<pre><code>FALSE Warning: package 'ggplot2' was built under R version 3.1.3</code></pre>
+
+<pre><code>library(kernlab);</code></pre>
+
+<pre><code>FALSE Warning: package 'kernlab' was built under R version 3.1.3</code></pre>
+
+<pre><code>set.seed(32343)</code></pre>
+
+<ol start="3">
+<li>Preprocessing: remove unnesessary columns</li>
+</ol>
+
+<pre><code>drops &lt;- c("cvtd_timestamp", "num_window",
+           "raw_timestamp_part_2","raw_timestamp_part_1","X")
+inputData&lt;-inputDataOrigin[,!(names(inputDataOrigin) %in% drops)]
+testing &lt;- testingOrigin[,!(names(testingOrigin) %in% drops)] </code></pre>
+
+<p>Test data set contains only data with newWindow=no, therefore we will use data with new_window=no only</p>
+
+<pre><code>no &lt;- inputData[inputData$new_window %in% c("no"),]
+noTest &lt;- testing[testing$new_window %in% c("no"),]
+drops &lt;- c("new_window")
+
+no&lt;-no[,!(names(no) %in% drops)]
+noTest&lt;-noTest[,!(names(noTest) %in% drops)]</code></pre>
+
+<p>Remove empty columns</p>
+
+<pre><code>toRemove&lt;-!apply(no, 2, function(x) all(gsub(" ", "", x)=="", na.rm=TRUE))
+
+no &lt;-no[,toRemove]
+noTest&lt;-noTest[,toRemove]</code></pre>
+
+<p>Divide into test and tain sub sets</p>
+
+<pre><code>inTrainNoLess&lt;- createDataPartition(y=no$classe,
+                               p=0.7, list=FALSE)
+trainingNoT &lt;- no[inTrainNoLess, ]
+testingNoT &lt;- no[-inTrainNoLess, ]</code></pre>
+
+<p>We will use for prediction random forest algorithm with cross validation with K-fold, K=5, use less trees,than defalt - only 50</p>
+
+<pre><code>controlRf &lt;- trainControl(method="cv", 5)
+
+modFit &lt;- train(classe~ .,data=trainingNoT,method="rf",  trControl=controlRf,ntree=50, prox=TRUE)</code></pre>
+
+<pre><code>## Loading required package: randomForest</code></pre>
+
+<pre><code>## Warning: package 'randomForest' was built under R version 3.1.3</code></pre>
+
+<pre><code>## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+
+<p>Make prediction in training and show confusion matrix</p>
+
+<pre><code>predictions &lt;- predict(modFit, newdata=testingNoT)
+C1 &lt;- confusionMatrix(predictions, testingNoT$classe)
+C1</code></pre>
+
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1639    7    0    0    0
+##          B    1 1101    4    0    1
+##          C    1    6 1000   13    1
+##          D    0    1    1  931    5
+##          E    0    0    0    0 1051
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9929          
+##                  95% CI : (0.9904, 0.9949)
+##     No Information Rate : 0.2847          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.991           
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9988   0.9874   0.9950   0.9862   0.9934
+## Specificity            0.9983   0.9987   0.9956   0.9985   1.0000
+## Pos Pred Value         0.9957   0.9946   0.9794   0.9925   1.0000
+## Neg Pred Value         0.9995   0.9970   0.9989   0.9973   0.9985
+## Prevalence             0.2847   0.1935   0.1744   0.1638   0.1836
+## Detection Rate         0.2844   0.1910   0.1735   0.1615   0.1824
+## Detection Prevalence   0.2856   0.1921   0.1772   0.1628   0.1824
+## Balanced Accuracy      0.9985   0.9931   0.9953   0.9924   0.9967</code></pre>
+
+<p>Apply trained algorithm to test data and write result into files</p>
+
+<pre><code>predictionsTarget &lt;- predict(modFit, newdata=noTest[, -length(names(noTest))])
+answers&lt;-predictionsTarget
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(answers)</code></pre>
+
+<p></p>
+</div>
+
+
+
+
+
+
+
+<p>
+</p>
+      </section>
+      <footer>
+        <p>Project maintained by <a href="https://github.com/olgakorichkovskaya">olgakorichkovskaya</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
